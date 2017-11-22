@@ -56,4 +56,9 @@ public class LineFollower implements AutoCloseable {
 	public void close() {
 		ev3.close();
 	}
+
+	public void setSpeed(float newSpeed) {
+		ev3.left.setSpeed(newSpeed);
+		ev3.right.setSpeed(newSpeed);
+	}
 }

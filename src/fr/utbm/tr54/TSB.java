@@ -11,16 +11,14 @@ import lejos.hardware.motor.Motor;
 public class TSB {
 	public static void main(String[] args) {
 		try (LineFollower robot = new LineFollower()) {
-				try(Client client = new Client("192.168.43.70", 8888, robot)) {
-					Button.waitForAnyPress();
-					new Thread(client).start();
-					robot.run();
-				}
+			try(Client client = new Client("192.168.43.70", 8888, robot)) {
+				Button.waitForAnyPress();
+				new Thread(client).start();
+				robot.run();
+			}
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

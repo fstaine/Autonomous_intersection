@@ -28,7 +28,7 @@ public class ClientProcessor implements Runnable {
 		while (!sock.isClosed()) {
 
 			// send speed to client
-			int newSpeed = randRange(200, 1000);
+			int newSpeed = randRange(200, 300);
 			writer.write(newSpeed + ";");
 			writer.flush();
 			System.out.println("Sent : " + newSpeed);

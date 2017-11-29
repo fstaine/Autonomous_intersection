@@ -21,6 +21,7 @@ public class Server extends Thread {
 	
 	public void run() {
 		isRunning = true;
+		System.out.println("Server running... wait for client connection");
 		while (isRunning == true) {
 			try {
 				// On attend une connexion d'un client

@@ -16,6 +16,17 @@ import java.net.UnknownHostException;
 
 public class Client implements Closeable, Runnable {
 
+	private static Client instance = null;
+	
+	public static Client getInsance() {
+		return instance;// FIXME
+	}
+	
+	public void send(String message){
+		writer.print(message);
+		writer.flush();
+	}
+	
 	private Socket connexion = null;
 	private PrintWriter writer = null;
 	private InputStream reader;
@@ -26,6 +37,7 @@ public class Client implements Closeable, Runnable {
 	private LineFollower robot;
 
 	public Client(String host, int port, LineFollower robot) throws UnknownHostException, IOException {
+		instance = this;
 		this.robot = robot;
 		connexion = new Socket(host, port);
 		writer = new PrintWriter(connexion.getOutputStream(), true);
@@ -43,11 +55,16 @@ public class Client implements Closeable, Runnable {
 //					reader.read(buffer); // read the speed that the server order him to apply
 //					float newSpeed = ByteBuffer.wrap(buffer).getFloat();
 				String request = getRequest();
-				float newSpeed = Float.parseFloat(request);
 				
-				robot.setSpeed(newSpeed);
+				robot.getResponse(request);
+				
+				//float newSpeed = Float.parseFloat(request);
+				
+				//robot.setSpeed(newSpeed);
 
-				System.out.println("Received: " +  request + ", " + newSpeed);
+				//System.out.println("Received: " +  request + ", " + newSpeed);
+				
+				//TODO : Différencier messages
 			}
 			
 //			try {

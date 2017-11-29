@@ -1,6 +1,7 @@
 package fr.utbm.tr54.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -8,6 +9,7 @@ import java.net.UnknownHostException;
 public class Server extends Thread {
 	private ServerSocket server;
 	private volatile boolean isRunning = false;
+	private InetAddress passing = null;
 	
 	public Server(int port) {
 		try {
@@ -28,7 +30,7 @@ public class Server extends Thread {
 				Socket client = server.accept();
 
 				// Une fois reçue, on la traite dans un thread séparé
-				ClientProcessor proc = new ClientProcessor(client);
+				ClientProcessor proc = new ClientProcessor(client, this);
 				Thread serverProcessorThread = new Thread(proc);
 				serverProcessorThread.start();
 			} catch (IOException e) {
@@ -47,5 +49,15 @@ public class Server extends Thread {
 	public static void main(String[] args) {
 		Server s = new Server(8888);
 		s.run();
+	}
+
+	public boolean isDangerZoneOccuped(InetAddress inetAddress) {
+		if(passing == null){
+			passing = inetAddress;
+			return false;
+		}
+		
+			return true;
+		
 	}
 }

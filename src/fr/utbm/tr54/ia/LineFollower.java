@@ -1,5 +1,9 @@
 package fr.utbm.tr54.ia;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
+import fr.utbm.tr54.client.Client;
 import fr.utbm.tr54.ev3.RobotController;
 import lejos.robotics.Color;
 import lejos.utility.Delay;
@@ -8,15 +12,17 @@ public class LineFollower implements AutoCloseable {
 	
 	RobotController ev3 = RobotController.getInstance();
 	
+	private Timer tasksTimer = new Timer();
+	
 	State currentState = State.STOP;
+	ServerOrder currentServerOrder = ServerOrder.NOINFO;
 
 	final float minDistToObstacle = 15f;
 	float distToObstacle = minDistToObstacle;
 	
 	public LineFollower() {
-		float speed = ev3.left.getMaxSpeed() / 3f;
-		ev3.left.setSpeed(speed);
-		ev3.right.setSpeed(speed);
+		float speed = 300;//ev3.left.getMaxSpeed() / 3f;
+		setSpeed(speed);
 		
 		int acceleration = 1000;
 		ev3.left.setAcceleration(acceleration);
@@ -43,27 +49,41 @@ public class LineFollower implements AutoCloseable {
 
 	private void move() {
 		if (distToObstacle < minDistToObstacle) {
-			setState(State.STOP);
-			System.out.println(distToObstacle);
-		}
-		switch (currentState) {
-		case FORWARD:
-			ev3.left.forward();
-			ev3.right.forward();
-			break;
-		case TURN_LEFT:
-			ev3.left.stop(true);
-			ev3.right.forward();
-			break;
-		case TURN_RIGHT:
-			ev3.left.forward();
-			ev3.right.stop(true);
-			break;
-		case STOP:
 			ev3.left.stop(true);
 			ev3.right.stop();
-			break;
+			System.out.println(distToObstacle);
 		}
+
+		if(currentServerOrder == ServerOrder.PASSING){
+			System.out.println("passing");
+			ev3.left.forward();
+			ev3.right.forward();
+		}else if(currentServerOrder == ServerOrder.NOTPASSING){
+			ev3.left.stop(true);
+			ev3.right.stop();
+		}
+		else if (currentServerOrder == ServerOrder.NOINFO) {
+			switch (currentState) {
+			case FORWARD:
+				ev3.left.forward();
+				ev3.right.forward();
+				break;
+			case TURN_LEFT:
+				ev3.left.stop(true);
+				ev3.right.forward();
+				break;
+			case TURN_RIGHT:
+				ev3.left.forward();
+				ev3.right.stop(true);
+				break;
+			case STOP:
+				ev3.left.stop(true);
+				ev3.right.stop();
+				break;
+			}
+		}
+			
+
 	}
 
 	@Override
@@ -77,13 +97,22 @@ public class LineFollower implements AutoCloseable {
 	}
 	
 	private void updateStateFromColor() {
+		System.out.println(ev3.getColor());
+		
 		switch (ev3.getColor()) {
 		case Color.WHITE:
 			setState(State.TURN_RIGHT);
 			break;
 		case Color.ORANGE:
+			System.out.println("Orange !!!!!!!");
+		case Color.RED:
+		case Color.BROWN:
+			if(currentServerOrder == ServerOrder.NOINFO) 
+				Client.getInsance().send("Je suis là =);");
 			// TODO: envoi status...
-			setState(State.FORWARD);
+			//setState(State.FORWARD);
+			setState(State.STOP);
+			Delay.msDelay(50);
 			break;
 		case Color.BLACK:
 			setState(State.TURN_LEFT);
@@ -93,7 +122,6 @@ public class LineFollower implements AutoCloseable {
 			break;
 		default:
 			setState(State.FORWARD);
-			//System.out.println(ev3.getColor());
 			break;
 		}
 	}
@@ -104,6 +132,40 @@ public class LineFollower implements AutoCloseable {
 	}
 
 	public enum State {
-		FORWARD, STOP, TURN_RIGHT, TURN_LEFT;
+		FORWARD, STOP, TURN_RIGHT, TURN_LEFT, PASSING;
+	}
+	
+	public enum ServerOrder {
+		PASSING, NOTPASSING, NOINFO;
+	}
+
+	public void getResponse(String request) {
+		System.out.println("COUCOUY "+request);
+		if(request.equals("GO") || request.equals("GO;")){
+			currentServerOrder = ServerOrder.PASSING;
+			TimerTask task = new TimerTask() {
+				
+				@Override
+				public void run() {
+					currentServerOrder = ServerOrder.NOINFO;
+					
+				}
+			};
+			tasksTimer.schedule(task, 1000);
+			
+			/*TimerTask task2 = new TimerTask() {
+				
+				@Override
+				public void run() {
+					
+					
+				}
+			};*/
+			
+			System.out.println("J'ai droit");
+		}else{
+			currentServerOrder = ServerOrder.NOTPASSING;
+		}
+		
 	}
 }

@@ -11,10 +11,12 @@ public class ClientProcessor implements Runnable {
 	public final Socket sock;
 	private BufferedInputStream reader = null; // buffer de lecture
 	private PrintWriter writer = null;
+	private Server server;
 
 	
-	public ClientProcessor(Socket sock) {
+	public ClientProcessor(Socket sock, Server server) {
 		this.sock = sock;
+		this.server = server;
 		try {
 			reader = new BufferedInputStream(sock.getInputStream());
 			writer = new PrintWriter(sock.getOutputStream(), true);
@@ -28,26 +30,30 @@ public class ClientProcessor implements Runnable {
 		while (!sock.isClosed()) {
 
 			// send speed to client
-			int newSpeed = randRange(200, 300);
-			writer.write(newSpeed + ";");
-			writer.flush();
-			System.out.println("Sent : " + newSpeed);
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
+//			int newSpeed = randRange(200, 300);
+//			writer.write(newSpeed + ";");
+//			writer.flush();
+//			System.out.println("Sent : " + newSpeed + " to " + sock.getInetAddress());
 //			try {
-//				// On attend la demande du client
-//				String request = getRequest();
-//				System.out.println(request);
-//				
-//				// set speed from the leader
-//			} catch (IOException e) {
+//				Thread.sleep(5000);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
 //				e.printStackTrace();
 //			}
+			
+			try {
+				// On attend la demande du client
+				String request = getRequest();
+				System.out.println(request + "-" + sock.getInetAddress());
+				Boolean t = server.isDangerZoneOccuped(sock.getInetAddress());
+				writer.write(t?"STOP;":"GO;");
+				writer.flush();
+				System.out.println("Sent : " + (t?"STOP;":"GO;"));
+				
+				// set speed from the leader
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			
 		}
 	};

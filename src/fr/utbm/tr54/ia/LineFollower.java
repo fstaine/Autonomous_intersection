@@ -143,7 +143,7 @@ public class LineFollower implements AutoCloseable {
 		System.out.println("COUCOUY "+request);
 		if(request.equals("GO") || request.equals("GO;")){
 			currentServerOrder = ServerOrder.PASSING;
-			TimerTask task = new TimerTask() {
+			TimerTask freeRobot = new TimerTask() {
 				
 				@Override
 				public void run() {
@@ -151,16 +151,17 @@ public class LineFollower implements AutoCloseable {
 					
 				}
 			};
-			tasksTimer.schedule(task, 1000);
+			tasksTimer.schedule(freeRobot, 1000);
 			
-			/*TimerTask task2 = new TimerTask() {
+			TimerTask freeZone = new TimerTask() {
 				
 				@Override
 				public void run() {
-					
-					
+					Client.getInsance().sendFreeZone();
 				}
-			};*/
+			};
+			
+			tasksTimer.schedule(freeZone, 10000);
 			
 			System.out.println("J'ai droit");
 		}else{

@@ -60,4 +60,10 @@ public class Server extends Thread {
 			return true;
 		
 	}
+
+	public void setZoneFree() {
+		System.out.println("LA ZONE EST LIBRE");
+		passing = null;
+		
+	}
 }

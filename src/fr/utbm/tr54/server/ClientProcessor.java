@@ -44,11 +44,15 @@ public class ClientProcessor implements Runnable {
 			try {
 				// On attend la demande du client
 				String request = getRequest();
+				if(request.equals("FREE")){
+					server.setZoneFree();
+				}else{
 				System.out.println(request + "-" + sock.getInetAddress());
 				Boolean t = server.isDangerZoneOccuped(sock.getInetAddress());
 				writer.write(t?"STOP;":"GO;");
 				writer.flush();
 				System.out.println("Sent : " + (t?"STOP;":"GO;"));
+				}
 				
 				// set speed from the leader
 			} catch (IOException e) {

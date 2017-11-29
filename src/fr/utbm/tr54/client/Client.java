@@ -112,5 +112,10 @@ public class Client implements Closeable, Runnable {
 			writer.close();
 		if (reader != null)
 			reader.close();
+	}
+
+	public void sendFreeZone() {
+		writer.write("FREE;");
+		writer.flush();
 	}	
 }

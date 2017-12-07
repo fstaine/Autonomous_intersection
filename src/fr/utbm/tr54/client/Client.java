@@ -5,14 +5,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-
-import fr.utbm.tr54.ev3.RobotController;
-import fr.utbm.tr54.ia.LineFollower;
-import lejos.robotics.Color;
-import lejos.utility.Delay;
-
 import java.net.UnknownHostException;
+import java.util.Scanner;
+
+import fr.utbm.tr54.ia.LineFollower;
 
 public class Client implements Closeable, Runnable {
 
@@ -30,6 +26,7 @@ public class Client implements Closeable, Runnable {
 	private Socket connexion = null;
 	private PrintWriter writer = null;
 	private InputStream reader;
+	private Scanner scanner;
 	private byte[] buffer = new byte[1024];
 	
 	private volatile boolean isRunning = false;
@@ -42,6 +39,8 @@ public class Client implements Closeable, Runnable {
 		connexion = new Socket(host, port);
 		writer = new PrintWriter(connexion.getOutputStream(), true);
 		reader = connexion.getInputStream();
+	    scanner = new Scanner(reader, "UTF-8");
+	    scanner.useDelimiter(";");
 	}
 	
 	public void run() {
@@ -49,14 +48,13 @@ public class Client implements Closeable, Runnable {
 		try {
 			
 			while (isRunning) {
-
-
 				//==================================================
 //					reader.read(buffer); // read the speed that the server order him to apply
 //					float newSpeed = ByteBuffer.wrap(buffer).getFloat();
-				String request = getRequest();
-				
-				robot.getResponse(request);
+				if (hasRequest()) {
+					String request = getRequest();
+					robot.getResponse(request);
+				}
 				
 				//float newSpeed = Float.parseFloat(request);
 				
@@ -84,6 +82,10 @@ public class Client implements Closeable, Runnable {
 		}
 	}
 	
+	private boolean hasRequest() {
+		return scanner.hasNext();
+	}
+	
 	private String getRequest() throws IOException {
 //		StringBuilder response = new StringBuilder();
 //		int b = reader.read();
@@ -92,17 +94,20 @@ public class Client implements Closeable, Runnable {
 //			b = reader.read();
 //		}
 //		return response.toString();
-//		
-		String response = "";
-		byte[] b = new byte[1];
-		while (!response.contains(";")) {
-			int count = reader.read(b);
-			if (count <= 0 ) {
-				return "0";
-			}
-			response += new String(b, 0, count);
-		}
-		return response.replace(";", "");
+		
+//		String response = "";
+//		byte[] b = new byte[1];
+//		while (!response.contains(";")) {
+//			int count = reader.read(b);
+//			if (count <= 0 ) {
+//				return "0";
+//			}
+//			response += new String(b, 0, count);
+//		}
+//		return response.replace(";", "");
+		
+		// TODO test if hasNext
+		return scanner.next();
 	}
 
 	@Override
@@ -112,6 +117,8 @@ public class Client implements Closeable, Runnable {
 			writer.close();
 		if (reader != null)
 			reader.close();
+		if (scanner != null)
+			scanner.close();
 	}
 
 	public void sendFreeZone() {

@@ -4,7 +4,9 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
+import java.util.Scanner;
 
 public class ClientProcessor implements Runnable {
 	
@@ -12,7 +14,7 @@ public class ClientProcessor implements Runnable {
 	private BufferedInputStream reader = null; // buffer de lecture
 	private PrintWriter writer = null;
 	private Server server;
-
+	private Scanner scanner;
 	
 	public ClientProcessor(Socket sock, Server server) {
 		this.sock = sock;
@@ -23,6 +25,8 @@ public class ClientProcessor implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	    scanner = new Scanner(reader, StandardCharsets.UTF_8.name());
+	    scanner.useDelimiter(";");
 	}
 	
 	public void run() {
@@ -73,15 +77,16 @@ public class ClientProcessor implements Runnable {
 		}
 	
 	private String getRequest() throws IOException {
-		String response = "";
-		byte[] b = new byte[1];
-		while (!response.contains(";")) {
-			int count = reader.read(b);
-			if (count <= 0 ) {
-				return "0;";
-			}
-			response += new String(b, 0, count);
-		}
-		return response.replace(";", "");
+//		String response = "";
+//		byte[] b = new byte[1];
+//		while (!response.contains(";")) {
+//			int count = reader.read(b);
+//			if (count <= 0 ) {
+//				return "0;";
+//			}
+//			response += new String(b, 0, count);
+//		}
+//		return response.replace(";", "");
+		return scanner.next();
 	}
 }

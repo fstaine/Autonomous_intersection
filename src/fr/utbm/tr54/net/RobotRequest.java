@@ -10,6 +10,8 @@ public abstract class RobotRequest implements Request {
 			return new PositionningRequest(position, emitter);
 		} else if (str.startsWith(FreeRequest.KEYWORD)) {
 			return new FreeRequest();
+		} else if (str.startsWith(CloseRequest.KEYWORD)) {
+			return new CloseRequest();
 		}
 		return null;
 	}

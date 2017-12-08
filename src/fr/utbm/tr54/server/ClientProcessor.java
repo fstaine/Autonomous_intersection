@@ -1,6 +1,7 @@
 package fr.utbm.tr54.server;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -13,7 +14,7 @@ import fr.utbm.tr54.net.CloseRequest;
 import fr.utbm.tr54.net.RobotRequest;
 import fr.utbm.tr54.net.ServerRequest;
 
-public class ClientProcessor implements Runnable {
+public class ClientProcessor implements Runnable, Closeable {
 	
 	public final Socket sock;
 	private BufferedReader reader;
@@ -42,7 +43,7 @@ public class ClientProcessor implements Runnable {
 					RobotRequest request = getRequest();
 					if (request != null) {
 						if (request instanceof CloseRequest) {
-							sock.close();
+							this.close();
 						} else {
 							manager.addReceivedRequests(request);
 						}
@@ -51,21 +52,14 @@ public class ClientProcessor implements Runnable {
 				if (hasOutcommingPendingRequest()) {
 					ServerRequest request = outputPendingRequest.poll();
 					if (request != null) {
-						writer.write(request.toString());
-						writer.flush();
+						writer.println(request.toString());
 					}
 				}
-				System.out.println("Here");
+				Thread.sleep(50);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		try {
-			Thread.sleep(50);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	};
@@ -96,5 +90,16 @@ public class ClientProcessor implements Runnable {
 	
 	public void sendRequest(ServerRequest request) throws InterruptedException {
 		outputPendingRequest.put(request);
+	}
+
+	@Override
+	public void close() throws IOException {
+		if (sock != null)
+			sock.close();
+		if (reader != null)
+			reader.close();
+		if (writer != null)
+			writer.close();
+		System.out.println("Close socket");
 	}
 }

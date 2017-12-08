@@ -5,13 +5,24 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
+
+import fr.utbm.tr54.net.ServerRequest;
 
 public class Server extends Thread {
+	private static Server instance;
+	
+	public static Server getInstance() {
+		return instance;
+	}
+	
 	private ServerSocket server;
 	private volatile boolean isRunning = false;
-	private InetAddress passing = null;
+	private Map<InetAddress, ClientProcessor> clients = new HashMap<>();
 	
 	public Server(int port) {
+		instance = this;
 		try {
 			server = new ServerSocket(port);
 		} catch (UnknownHostException e) {
@@ -31,6 +42,7 @@ public class Server extends Thread {
 
 				// Une fois reçue, on la traite dans un thread séparé
 				ClientProcessor proc = new ClientProcessor(client, this);
+				clients.put(client.getInetAddress(), proc);
 				Thread serverProcessorThread = new Thread(proc);
 				serverProcessorThread.start();
 			} catch (IOException e) {
@@ -46,24 +58,19 @@ public class Server extends Thread {
 		}
 	}
 	
+	public boolean sendRequest(InetAddress client, ServerRequest request) throws InterruptedException {
+		ClientProcessor proc = clients.get(client);
+		if (proc == null) {
+			return false;
+		} else {
+			proc.sendRequest(request);
+			return true;
+		}
+	}
+	
 	public static void main(String[] args) {
 		Server s = new Server(8888);
 		s.run();
-	}
-
-	public boolean isDangerZoneOccuped(InetAddress inetAddress) {
-		if(passing == null){
-			passing = inetAddress;
-			return false;
-		}
-		
-			return true;
-		
-	}
-
-	public void setZoneFree() {
-		System.out.println("LA ZONE EST LIBRE");
-		passing = null;
-		
+		IntersectionManager manager = IntersectionManager.getInstance();
 	}
 }

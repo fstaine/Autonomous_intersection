@@ -7,14 +7,23 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import fr.utbm.tr54.net.CloseRequest;
+import fr.utbm.tr54.net.Request;
+import fr.utbm.tr54.net.RobotRequest;
+import fr.utbm.tr54.net.ServerRequest;
 
 public class ClientProcessor implements Runnable {
 	
 	public final Socket sock;
-	private BufferedInputStream reader = null; // buffer de lecture
-	private PrintWriter writer = null;
+	private BufferedInputStream reader;
+	private PrintWriter writer;
 	private Server server;
 	private Scanner scanner;
+	private IntersectionManager manager = IntersectionManager.getInstance();
+	private BlockingQueue<ServerRequest> outputPendingRequest = new LinkedBlockingQueue<>();
 	
 	public ClientProcessor(Socket sock, Server server) {
 		this.sock = sock;
@@ -26,67 +35,68 @@ public class ClientProcessor implements Runnable {
 			e.printStackTrace();
 		}
 	    scanner = new Scanner(reader, StandardCharsets.UTF_8.name());
-	    scanner.useDelimiter(";");
+	    scanner.useDelimiter(Request.DELIMITER);
 	}
 	
 	public void run() {
 		System.out.println("Une connexion d'un client a ete recue: " + sock.getInetAddress());
-		while (!sock.isClosed()) {
-
-			// send speed to client
-//			int newSpeed = randRange(200, 300);
-//			writer.write(newSpeed + ";");
-//			writer.flush();
-//			System.out.println("Sent : " + newSpeed + " to " + sock.getInetAddress());
-//			try {
-//				Thread.sleep(5000);
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-			
-			try {
-				// On attend la demande du client
-				String request = getRequest();
-				if(request.equals("FREE")){
-					server.setZoneFree();
-				}else{
-				System.out.println(request + "-" + sock.getInetAddress());
-				Boolean t = server.isDangerZoneOccuped(sock.getInetAddress());
-				writer.write(t?"STOP;":"GO;");
-				writer.flush();
-				System.out.println("Sent : " + (t?"STOP;":"GO;"));
+		try {
+			while (!sock.isClosed()) {
+				//TODO test if present
+				if (hasIncommingRequest()) {
+					RobotRequest request = getRequest();
+					if (request != null) {
+						if (request instanceof CloseRequest) {
+							sock.close();
+						} else {
+							manager.addReceivedRequests(request);
+						}
+					}
 				}
-				
-				// set speed from the leader
-			} catch (IOException e) {
-				e.printStackTrace();
+				if (hasOutcommingPendingRequest()) {
+					ServerRequest request = outputPendingRequest.poll();
+					if (request != null) {
+						writer.write(request.toString());
+						writer.flush();
+					}
+				}
 			}
-			
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		try {
+			Thread.sleep(50);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	};
 	
-	private void setRequest(float speed) throws IOException {
-		
+	private int randRange(int min, int max) {
+		Random r = new Random(); 
+		int x = min + r.nextInt(max - min);
+		return x;
 	}
 	
-	private int randRange(int min, int max) {
-		  Random r = new Random(); 
-		  int x = min + r.nextInt(max - min);
-		  return x;
-		}
+	private boolean hasIncommingRequest() {
+		return scanner.hasNext();
+	}
 	
-	private String getRequest() throws IOException {
-//		String response = "";
-//		byte[] b = new byte[1];
-//		while (!response.contains(";")) {
-//			int count = reader.read(b);
-//			if (count <= 0 ) {
-//				return "0;";
-//			}
-//			response += new String(b, 0, count);
-//		}
-//		return response.replace(";", "");
-		return scanner.next();
+	private boolean hasOutcommingPendingRequest() {
+		return !outputPendingRequest.isEmpty();
+	}
+	
+	private RobotRequest getRequest() throws IOException {
+		if (scanner.hasNext()) {
+			String strRequest = scanner.next();
+			return RobotRequest.parseRequest(strRequest, sock.getInetAddress());
+		}
+		return null;
+	}
+	
+	public void sendRequest(ServerRequest request) throws InterruptedException {
+		outputPendingRequest.put(request);
 	}
 }

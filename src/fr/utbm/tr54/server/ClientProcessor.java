@@ -1,27 +1,24 @@
 package fr.utbm.tr54.server;
 
-import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.Random;
-import java.util.Scanner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import fr.utbm.tr54.net.CloseRequest;
-import fr.utbm.tr54.net.Request;
 import fr.utbm.tr54.net.RobotRequest;
 import fr.utbm.tr54.net.ServerRequest;
 
 public class ClientProcessor implements Runnable {
 	
 	public final Socket sock;
-	private BufferedInputStream reader;
+	private BufferedReader reader;
 	private PrintWriter writer;
 	private Server server;
-	private Scanner scanner;
 	private IntersectionManager manager = IntersectionManager.getInstance();
 	private BlockingQueue<ServerRequest> outputPendingRequest = new LinkedBlockingQueue<>();
 	
@@ -29,13 +26,11 @@ public class ClientProcessor implements Runnable {
 		this.sock = sock;
 		this.server = server;
 		try {
-			reader = new BufferedInputStream(sock.getInputStream());
+			reader = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 			writer = new PrintWriter(sock.getOutputStream(), true);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	    scanner = new Scanner(reader, StandardCharsets.UTF_8.name());
-	    scanner.useDelimiter(Request.DELIMITER);
 	}
 	
 	public void run() {
@@ -60,6 +55,7 @@ public class ClientProcessor implements Runnable {
 						writer.flush();
 					}
 				}
+				System.out.println("Here");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -80,20 +76,22 @@ public class ClientProcessor implements Runnable {
 		return x;
 	}
 	
-	private boolean hasIncommingRequest() {
-		return scanner.hasNext();
+	private boolean hasIncommingRequest() throws IOException {
+		return reader.ready();
 	}
 	
 	private boolean hasOutcommingPendingRequest() {
 		return !outputPendingRequest.isEmpty();
 	}
 	
+	/**
+	 * Read the next request. Block until the request is ready
+	 * @return the request sent by a robot
+	 * @throws IOException
+	 */
 	private RobotRequest getRequest() throws IOException {
-		if (scanner.hasNext()) {
-			String strRequest = scanner.next();
-			return RobotRequest.parseRequest(strRequest, sock.getInetAddress());
-		}
-		return null;
+		String strRequest = reader.readLine();
+		return RobotRequest.parseRequest(strRequest, sock.getInetAddress());
 	}
 	
 	public void sendRequest(ServerRequest request) throws InterruptedException {

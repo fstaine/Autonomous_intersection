@@ -8,13 +8,12 @@ import fr.utbm.tr54.net.FreeRequest;
 import fr.utbm.tr54.net.GoRequest;
 import fr.utbm.tr54.net.PositionningRequest;
 import fr.utbm.tr54.net.RobotRequest;
-import fr.utbm.tr54.net.ServerRequest;
 
 /**
  * Singleton Thread that controls the intersection. 
  * @author TSB team
  */
-public class IntersectionManager extends Thread {
+public class IntersectionManager extends Thread implements RequestHandler<RobotRequest> {
 	private static IntersectionManager instance;
 	
 	public static IntersectionManager getInstance() {
@@ -63,6 +62,7 @@ public class IntersectionManager extends Thread {
 		}
 	}
 
+	@Override
 	public void receive(RobotRequest request) throws InterruptedException {
 		incommingRequests.put(request);
 	}

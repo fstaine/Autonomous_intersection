@@ -8,8 +8,11 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import fr.utbm.tr54.net.ServerRequest;
-
+/**
+ * Server thread, accept incoming connection on the selected port
+ * @author TSB Team
+ *
+ */
 public class Server extends Thread {
 	private static Server instance;
 	
@@ -58,14 +61,13 @@ public class Server extends Thread {
 		}
 	}
 	
-	public boolean sendRequest(InetAddress client, ServerRequest request) throws InterruptedException {
-		ClientProcessor proc = clients.get(client);
-		if (proc == null) {
-			return false;
-		} else {
-			proc.sendRequest(request);
-			return true;
-		}
+	/**
+	 * Get client associated to a InetAddress. 
+	 * @param clientAddress address of the client to get
+	 * @return null if no client is associated to the address, the corresponding client otherwise
+	 */
+	public ClientProcessor getClient(InetAddress clientAddress) {
+		return clients.get(clientAddress);
 	}
 	
 	public static void main(String[] args) {

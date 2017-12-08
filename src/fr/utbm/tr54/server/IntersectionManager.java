@@ -10,6 +10,10 @@ import fr.utbm.tr54.net.PositionningRequest;
 import fr.utbm.tr54.net.RobotRequest;
 import fr.utbm.tr54.net.ServerRequest;
 
+/**
+ * Singleton Thread that controls the intersection. 
+ * @author TSB team
+ */
 public class IntersectionManager extends Thread {
 	private static IntersectionManager instance;
 	
@@ -39,31 +43,27 @@ public class IntersectionManager extends Thread {
 		try {
 			while(isRunning) {
 				RobotRequest request = incommingRequests.take();
-				// TODO Hanlde message
-				System.out.println("Received (" + request.getEmitter() + "): " + request);
+				System.out.println("Received (" + request.getSender() + "): " + request);
 				if (request instanceof PositionningRequest) {
 					boolean sendGo = false;
-					if (prevRobot == null || prevRobot == request.getEmitter()) {
+					if (prevRobot == null/* || prevRobot == request.getEmitter()*/) {
 						sendGo = true;
 					}
-					prevRobot = request.getEmitter();
+					prevRobot = request.getSender();
 					if (sendGo) {
-						server.sendRequest(prevRobot, new GoRequest());
+						ClientProcessor client = server.getClient(prevRobot);
+						client.sendRequest(new GoRequest());
 					}
 				} else if (request instanceof FreeRequest) {
-					
+					prevRobot = null;
 				}
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	public void addReceivedRequests(RobotRequest request) throws InterruptedException {
+
+	public void receive(RobotRequest request) throws InterruptedException {
 		incommingRequests.put(request);
-	}
-	
-	public void sendMessage(ServerRequest request) {
-		
 	}
 }

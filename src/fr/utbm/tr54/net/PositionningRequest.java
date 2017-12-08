@@ -2,6 +2,11 @@ package fr.utbm.tr54.net;
 
 import java.net.InetAddress;
 
+/**
+ * Tell the robot's position to the server
+ * @author TSB Team
+ * @see RobotRequest
+ */
 public class PositionningRequest extends RobotRequest {
 	public static final String KEYWORD = "Here";
 	
@@ -11,8 +16,8 @@ public class PositionningRequest extends RobotRequest {
 		this.position = position;
 	}
 
-	public PositionningRequest(int position, InetAddress emitter) {
-		super(emitter);
+	public PositionningRequest(int position, InetAddress sender) {
+		super(sender);
 		this.position = position;
 	}
 	

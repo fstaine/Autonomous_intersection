@@ -11,6 +11,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import fr.utbm.tr54.ia.LineFollower;
+import fr.utbm.tr54.net.RobotRequest;
 import fr.utbm.tr54.net.ServerRequest;
 
 public class Client implements Closeable, Runnable {
@@ -21,8 +22,9 @@ public class Client implements Closeable, Runnable {
 		return instance;// FIXME
 	}
 	
-	public void send(String message){
-		writer.print(message);
+	public void send(RobotRequest message){ //String message){
+		System.out.println("send : msg="+message);
+		writer.println(message.toString());
 		writer.flush();
 	}
 	
@@ -51,7 +53,7 @@ public class Client implements Closeable, Runnable {
 				//==================================================
 				if (hasIncommingRequest()) {
 					ServerRequest request = getRequest();
-					robot.getResponse(request);
+					robot.addMessage(request);
 				}
 				
 				//float newSpeed = Float.parseFloat(request);

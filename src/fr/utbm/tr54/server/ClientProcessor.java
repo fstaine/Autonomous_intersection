@@ -57,6 +57,7 @@ public class ClientProcessor implements Runnable, Closeable {
 				if (hasOutcommingPendingRequest()) {
 					ServerRequest request = outputPendingRequest.poll();
 					if (request != null) {
+						System.out.println("Sent: " + request);
 						writer.println(request.toString());
 					}
 				}

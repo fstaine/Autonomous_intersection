@@ -15,6 +15,10 @@ public class FreeRequest extends RobotRequest {
 		super(sender);
 	}
 	
+	public FreeRequest() {
+		super();
+	}
+	
 	@Override
 	public String toString() {
 		return KEYWORD;

@@ -23,15 +23,14 @@ public class Client implements Closeable, Runnable {
 	}
 	
 	public void send(RobotRequest message){ //String message){
-		System.out.println("send : msg="+message);
-		writer.println(message.toString());
-		writer.flush();
+		// Add to the list of messages to send
+		outputPendingRequest.add(message);
 	}
 	
 	private Socket connexion;
 	private BufferedReader reader;
 	private PrintWriter writer;
-	private BlockingQueue<ServerRequest> outputPendingRequest = new LinkedBlockingQueue<>();
+	private BlockingQueue<RobotRequest> outputPendingRequest = new LinkedBlockingQueue<>();
 	
 	private volatile boolean isRunning = false;
 
@@ -54,6 +53,14 @@ public class Client implements Closeable, Runnable {
 				if (hasIncommingRequest()) {
 					ServerRequest request = getRequest();
 					robot.addMessage(request);
+				}
+				
+				// Send request if any present in the queue
+				RobotRequest request = outputPendingRequest.poll();
+				if (request != null) {
+					System.out.println("send : msg="+request);
+					writer.println(request.toString());
+					writer.flush();
 				}
 				
 				//float newSpeed = Float.parseFloat(request);

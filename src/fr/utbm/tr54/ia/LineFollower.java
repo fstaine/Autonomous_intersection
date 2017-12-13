@@ -110,7 +110,7 @@ public class LineFollower implements AutoCloseable {
 		Client.getInsance().send(new PositionningRequest(1));
 		ServerRequest request = null;
 		try {
-			request = requests.poll(500, TimeUnit.MILLISECONDS);
+			request = requests.poll(500, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

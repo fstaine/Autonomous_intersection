@@ -27,7 +27,8 @@ public class LineFollower implements AutoCloseable {
 	 */
 	private final float minDist = 10f;
 	
-	private final int tachoCalculator = 2200;
+	private final int tachoEndCalculator = 2200;
+	private final int tachosWaitingCalculator = 1000;
 	
 	public LineFollower() {
 		float speed = 300;//ev3.left.getMaxSpeed() / 3f;
@@ -42,9 +43,33 @@ public class LineFollower implements AutoCloseable {
 	public void run() {
 		while (true) {
 			
-			if(serverState == ServerState.Go || serverState == ServerState.NoInfo) {
+			if(serverState != ServerState.Stop) {
+				if (serverState == ServerState.WaitingZone) {
+					if (ev3.left.getTachoCount() >= tachosWaitingCalculator) {
+						ev3.stop();
+						Client.getInsance().send(new PositionningRequest(1));
+						ServerRequest request = null;
+						try {
+							request = requests.poll(500, TimeUnit.SECONDS);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						
+						if (request != null && request instanceof GoRequest) {
+							System.out.println("Received:" + request);
+							serverState = ServerState.Go;
+							state = State.Forward;
+							forwardState = ForwardState.TurnLeft;
+							Sound.beepSequenceUp();
+						} else {
+							System.out.println("Stopppppp");
+							serverState = ServerState.Stop;
+							state = State.Stop;
+						}
+					}
+				}
 				if (serverState == ServerState.Go) {
-					if (ev3.left.getTachoCount() > tachoCalculator) {
+					if (ev3.left.getTachoCount() >= tachoEndCalculator) {
 						Sound.beepSequence();
 						serverState = ServerState.NoInfo;
 						Client.getInsance().send(new FreeRequest());
@@ -98,7 +123,6 @@ public class LineFollower implements AutoCloseable {
 		case Color.RED:
 		//case Color.BROWN:
 			if (serverState == ServerState.NoInfo) {
-				ev3.stop();
 				askServerForForwardState();
 			}
 		default:
@@ -107,26 +131,8 @@ public class LineFollower implements AutoCloseable {
 	}
 
 	private void askServerForForwardState() {
-		Client.getInsance().send(new PositionningRequest(1));
-		ServerRequest request = null;
-		try {
-			request = requests.poll(500, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		
-		if (request != null && request instanceof GoRequest) {
-			System.out.println("Received:" + request);
-			serverState = ServerState.Go;
-			state = State.Forward;
-			forwardState = ForwardState.TurnLeft;
-			Sound.beepSequenceUp();
-			ev3.left.resetTachoCount();
-		} else {
-			System.out.println("Stopppppp");
-			serverState = ServerState.Stop;
-			state = State.Stop;
-		}
+		serverState = ServerState.WaitingZone;
+		ev3.left.resetTachoCount();
 	}
 	
 	public void addMessage(ServerRequest message) {
@@ -151,6 +157,6 @@ public class LineFollower implements AutoCloseable {
 	}
 	
 	private enum ServerState {
-		NoInfo, Go, Stop
+		NoInfo, Go, Stop, WaitingZone
 	}
 }

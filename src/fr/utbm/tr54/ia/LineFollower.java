@@ -20,6 +20,11 @@ public class LineFollower implements AutoCloseable {
 	ForwardState forwardState;
 	ServerState serverState = ServerState.NoInfo;
 	
+	/**
+	 * Position of the robot: 1 -> First orange color, 2 -> Second Orange color
+	 */
+	private int position = 1;
+	
 	BlockingQueue<ServerRequest> requests = new LinkedBlockingQueue<>();
 	
 	/**
@@ -47,7 +52,7 @@ public class LineFollower implements AutoCloseable {
 				if (serverState == ServerState.WaitingZone) {
 					if (ev3.left.getTachoCount() >= tachosWaitingCalculator) {
 						ev3.stop();
-						Client.getInsance().send(new PositionningRequest(1));
+						Client.getInsance().send(new PositionningRequest(position));
 						ServerRequest request = null;
 						try {
 							request = requests.poll(500, TimeUnit.SECONDS);
@@ -98,6 +103,14 @@ public class LineFollower implements AutoCloseable {
 			}
 		}
 	}
+	
+	private void updatePosition() {
+		if (position == 1) {
+			position = 2;
+		} else {
+			position = 1;
+		}
+	}
 
 	private void getStateFromDistance() {
 		if (ev3.distance() < minDist ) {
@@ -133,6 +146,7 @@ public class LineFollower implements AutoCloseable {
 	private void askServerForForwardState() {
 		serverState = ServerState.WaitingZone;
 		ev3.left.resetTachoCount();
+		updatePosition();
 	}
 	
 	public void addMessage(ServerRequest message) {

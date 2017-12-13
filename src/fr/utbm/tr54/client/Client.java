@@ -1,14 +1,17 @@
 package fr.utbm.tr54.client;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Scanner;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import fr.utbm.tr54.ia.LineFollower;
+import fr.utbm.tr54.net.ServerRequest;
 
 public class Client implements Closeable, Runnable {
 
@@ -23,11 +26,10 @@ public class Client implements Closeable, Runnable {
 		writer.flush();
 	}
 	
-	private Socket connexion = null;
-	private PrintWriter writer = null;
-	private InputStream reader;
-	private Scanner scanner;
-	private byte[] buffer = new byte[1024];
+	private Socket connexion;
+	private BufferedReader reader;
+	private PrintWriter writer;
+	private BlockingQueue<ServerRequest> outputPendingRequest = new LinkedBlockingQueue<>();
 	
 	private volatile boolean isRunning = false;
 
@@ -38,9 +40,7 @@ public class Client implements Closeable, Runnable {
 		this.robot = robot;
 		connexion = new Socket(host, port);
 		writer = new PrintWriter(connexion.getOutputStream(), true);
-		reader = connexion.getInputStream();
-	    scanner = new Scanner(reader, "UTF-8");
-	    scanner.useDelimiter(";");
+		reader = new BufferedReader(new InputStreamReader(connexion.getInputStream()));
 	}
 	
 	public void run() {
@@ -49,10 +49,8 @@ public class Client implements Closeable, Runnable {
 			
 			while (isRunning) {
 				//==================================================
-//					reader.read(buffer); // read the speed that the server order him to apply
-//					float newSpeed = ByteBuffer.wrap(buffer).getFloat();
-				if (hasRequest()) {
-					String request = getRequest();
+				if (hasIncommingRequest()) {
+					ServerRequest request = getRequest();
 					robot.getResponse(request);
 				}
 				
@@ -64,13 +62,11 @@ public class Client implements Closeable, Runnable {
 				
 				//TODO : Différencier messages
 			}
-			
 //			try {
 //				//Thread.sleep(20);
 //			} catch (InterruptedException e) {
 //				e.printStackTrace();
 //			}
-		
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
@@ -82,43 +78,35 @@ public class Client implements Closeable, Runnable {
 		}
 	}
 	
-	private boolean hasRequest() {
-		return scanner.hasNext();
+	/**
+	 * Check if a request is incoming.
+	 * A true value do not assure the {@link getRequest} will not have to wait for the request to be fully read. 
+	 * @return false if nothing ha been written to the input stream, true otherwise. 
+	 * @throws IOException
+	 */
+	private boolean hasIncommingRequest() throws IOException {
+		return reader.ready();
 	}
 	
-	private String getRequest() throws IOException {
-//		StringBuilder response = new StringBuilder();
-//		int b = reader.read();
-//		while(b != -1) {
-//			response.append(b);
-//			b = reader.read();
-//		}
-//		return response.toString();
-		
-//		String response = "";
-//		byte[] b = new byte[1];
-//		while (!response.contains(";")) {
-//			int count = reader.read(b);
-//			if (count <= 0 ) {
-//				return "0";
-//			}
-//			response += new String(b, 0, count);
-//		}
-//		return response.replace(";", "");
-		
-		// TODO test if hasNext
-		return scanner.next();
+	/**
+	 * Read the next request. Block until the request is ready
+	 * @return the request sent by a robot
+	 * @throws IOException
+	 */
+	private ServerRequest getRequest() throws IOException {
+		String strRequest = reader.readLine();
+		return ServerRequest.parseRequest(strRequest);
 	}
 
 	@Override
 	public void close() throws IOException {
 		isRunning = false;
-		if (writer != null)
-			writer.close();
+		if (connexion != null)
+			connexion.close();
 		if (reader != null)
 			reader.close();
-		if (scanner != null)
-			scanner.close();
+		if (writer != null)
+			writer.close();
 	}
 
 	public void sendFreeZone() {

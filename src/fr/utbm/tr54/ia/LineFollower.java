@@ -5,6 +5,8 @@ import java.util.TimerTask;
 
 import fr.utbm.tr54.client.Client;
 import fr.utbm.tr54.ev3.RobotController;
+import fr.utbm.tr54.net.GoRequest;
+import fr.utbm.tr54.net.ServerRequest;
 import lejos.robotics.Color;
 import lejos.utility.Delay;
 
@@ -16,6 +18,7 @@ public class LineFollower implements AutoCloseable {
 	
 	State currentState = State.STOP;
 	ServerOrder currentServerOrder = ServerOrder.NOINFO;
+	private boolean isOnThePlace = false;
 
 	final float minDistToObstacle = 15f;
 	float distToObstacle = minDistToObstacle;
@@ -107,12 +110,12 @@ public class LineFollower implements AutoCloseable {
 			System.out.println("Orange !!!!!!!");
 		case Color.RED:
 		case Color.BROWN:
-			if(currentServerOrder == ServerOrder.NOINFO) 
-				Client.getInsance().send("Je suis là =);");
+			if(currentServerOrder == ServerOrder.NOINFO && !isOnThePlace)
+				setWaitForResponseState();
 			// TODO: envoi status...
 			//setState(State.FORWARD);
-			setState(State.STOP);
-			Delay.msDelay(50);
+//			setState(State.STOP);
+//			Delay.msDelay(50);
 			break;
 		case Color.BLACK:
 			setState(State.TURN_LEFT);
@@ -124,6 +127,11 @@ public class LineFollower implements AutoCloseable {
 			setState(State.FORWARD);
 			break;
 		}
+	}
+	
+	private void setWaitForResponseState() {
+		Client.getInsance().send("Je suis là =);");
+		isOnThePlace = true;
 	}
 	
 	private void setState(State state) {
@@ -139,9 +147,9 @@ public class LineFollower implements AutoCloseable {
 		PASSING, NOTPASSING, NOINFO;
 	}
 
-	public void getResponse(String request) {
-		System.out.println("COUCOUY "+request);
-		if(request.equals("GO") || request.equals("GO;")){
+	public void getResponse(ServerRequest request) {
+		System.out.println("COUCOUY " + request);
+		if(request instanceof GoRequest) {
 			currentServerOrder = ServerOrder.PASSING;
 			TimerTask freeRobot = new TimerTask() {
 				
@@ -151,13 +159,14 @@ public class LineFollower implements AutoCloseable {
 					
 				}
 			};
-			tasksTimer.schedule(freeRobot, 1000);
+			tasksTimer.schedule(freeRobot, 500);
 			
 			TimerTask freeZone = new TimerTask() {
 				
 				@Override
 				public void run() {
 					Client.getInsance().sendFreeZone();
+					isOnThePlace = false;
 				}
 			};
 			

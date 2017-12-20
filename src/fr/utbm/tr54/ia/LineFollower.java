@@ -35,10 +35,10 @@ public class LineFollower implements AutoCloseable {
 	/**
 	 * Min dist before stopping (cm)
 	 */
-	private final float minDist = 10f;
+	private final float minDist = 15f;
 	
-	private final int tachoEndCalculator = 2450;
-	private final int tachosWaitingCalculator = 800;
+	private final int tachoEndCalculator = 2300;
+	private final int tachosWaitingCalculator = 1000;
 	
 	public LineFollower() {
 		float speed = 300;//ev3.left.getMaxSpeed() / 3f;

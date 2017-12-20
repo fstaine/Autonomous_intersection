@@ -64,7 +64,7 @@ public class LineFollower implements AutoCloseable {
 					setLedColor(STATIC_RED);
 					ServerRequest request = null;
 					try {
-						request = requests.poll(500, TimeUnit.SECONDS);
+						request = requests.poll(100, TimeUnit.MILLISECONDS);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

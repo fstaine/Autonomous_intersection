@@ -242,6 +242,15 @@ public class RobotController implements AutoCloseable {
 		}
 		return res / vals.length;
 	}
+	
+	public void resetTachoCount() {
+		left.resetTachoCount();
+		right.resetTachoCount();
+	}
+	
+	public int getMeanTachoCount() {
+		return (left.getTachoCount() + right.getTachoCount()) / 2;
+	}
 
 	@Override
 	public void close() {

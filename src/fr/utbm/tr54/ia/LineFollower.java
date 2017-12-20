@@ -53,7 +53,7 @@ public class LineFollower implements AutoCloseable {
 	public void run() {
 		while (true) {
 			if (serverState == ServerState.WaitingZone) {
-				if (ev3.left.getTachoCount() <= tachosWaitingCalculator) {
+				if (ev3.getMeanTachoCount() <= tachosWaitingCalculator) {
 					ServerRequest request = requests.poll();
 					if (request != null && request instanceof GoRequest) {
 						onGoReceived((GoRequest) request);
@@ -74,7 +74,7 @@ public class LineFollower implements AutoCloseable {
 				}
 			}
 			if (serverState == ServerState.Go) {
-				if (ev3.left.getTachoCount() >= tachoEndCalculator) {
+				if (ev3.getMeanTachoCount() >= tachoEndCalculator) {
 					Sound.beepSequence();
 					serverState = ServerState.NoInfo;
 					setLedColor(TURN_OFF);
@@ -145,6 +145,7 @@ public class LineFollower implements AutoCloseable {
 	private void askServerForForwardState() {
 		serverState = ServerState.WaitingZone;
 		setLedColor(NORMAL_BLINK_YELLOW);
+		ev3.right.resetTachoCount();
 		ev3.left.resetTachoCount();
 		updatePosition();
 		

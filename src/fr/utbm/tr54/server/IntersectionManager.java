@@ -1,8 +1,8 @@
 package fr.utbm.tr54.server;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -70,32 +70,47 @@ public class IntersectionManager extends Thread implements RequestHandler<RobotR
 				
 				// when receive positionning request (enter in color ORANGE)
 				if (request instanceof PositionningRequest) {
+					
+					// if nobody waiting OR passingDirection is the same
 					if (passingDirection == -1 || passingDirection == ((PositionningRequest) request).getPosition()) {
 						passingDirection = ((PositionningRequest) request).getPosition();
 						nbRobots++;
 						ClientProcessor client = server.getClient(request.getSender());
 						client.sendRequest(new GoRequest());
 					} else {
+						// Add to wait list
 						passingDirection = ((PositionningRequest) request).getPosition();
-						Queue<InetAddress> waitingRobots = waitingMap.getOrDefault(passingDirection, new LinkedBlockingQueue<InetAddress>());
+						Queue<InetAddress> waitingRobots = waitingMap.get(passingDirection);
+						if (waitingRobots == null) {
+							waitingRobots = new LinkedBlockingQueue<InetAddress>();
+							waitingMap.put(passingDirection, waitingRobots);
+						}
 						waitingRobots.add(request.getSender());
 					}
-				} 
+				}
 				
 				// when it's not anymore in danger zone 
 				else if (request instanceof FreeRequest) {
 					nbRobots--;
-					if (nbRobots == 0) {
+					System.out.println("Sortie robot " + request.getSender() + ", nb=" + nbRobots + ", passingDir: " + passingDirection);
+					if (nbRobots == 0) { // Nobody remaining in the intersection
 						int newDir = getNewPassingDirection();
-						
-						if (newDir == -1) {
+						System.out.println("newDir: " + newDir + ", robots: " + waitingMap.get(newDir));
+						if (newDir == -1) { // No robot are waiting
 							passingDirection = -1;
-						} else {
+						} else { // Some robots are waiting
 							passingDirection = newDir;
 							Queue<InetAddress> waitingRobots = waitingMap.get(newDir);
-							for (InetAddress robot : waitingRobots) {
-								ClientProcessor clientProcessor = server.getClient(robot);
-								clientProcessor.sendRequest(new GoRequest());
+							while (!waitingRobots.isEmpty()) {
+								InetAddress robot = waitingRobots.poll();
+								if (robot != null) {
+									ClientProcessor clientProcessor = server.getClient(robot);
+									// Free each waiting robot on the same road
+									clientProcessor.sendRequest(new GoRequest());
+									nbRobots++;
+								} else {
+									System.err.println("Null ??????");
+								}
 							}
 						}
 					}

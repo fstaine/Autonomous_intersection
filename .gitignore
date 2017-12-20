@@ -29,3 +29,5 @@ hs_err_pid*
 \.project
 
 doc/
+
+src/fr/utbm/tr54/ia/follower/

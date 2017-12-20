@@ -12,7 +12,9 @@ public class TSB {
 	public static void main(String[] args) {
 		try (LineFollower robot = new LineFollower()) {
 			try(Client client = new Client("192.168.43.70", 8888, robot)) {
-				System.out.println("Press enter for direction right, any other Button for left direction");
+				System.out.println("Select position");
+				System.out.println("> Enter: Right");
+				System.out.println("> Other: Left");
 				int btn = Button.waitForAnyPress();
 				if (btn == Button.ID_ENTER) {
 					robot.setPosition(1);

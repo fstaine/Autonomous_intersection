@@ -10,6 +10,7 @@ import fr.utbm.tr54.net.FreeRequest;
 import fr.utbm.tr54.net.GoRequest;
 import fr.utbm.tr54.net.PositionningRequest;
 import fr.utbm.tr54.net.ServerRequest;
+import lejos.hardware.Button;
 import lejos.hardware.Sound;
 import lejos.robotics.Color;
 
@@ -19,6 +20,10 @@ public class LineFollower implements AutoCloseable {
 	State state = State.Stop;
 	ForwardState forwardState;
 	ServerState serverState = ServerState.NoInfo;
+	final int STATIC_RED = 2;
+	final int NORMAL_BLINK_YELLOW = 6;
+	final int FAST_BLINK_GREEN = 7;
+	final int TURN_OFF = 0;
 	
 	/**
 	 * Position of the robot: 1 -> First orange color, 2 -> Second Orange color
@@ -32,8 +37,8 @@ public class LineFollower implements AutoCloseable {
 	 */
 	private final float minDist = 10f;
 	
-	private final int tachoEndCalculator = 2200;
-	private final int tachosWaitingCalculator = 1000;
+	private final int tachoEndCalculator = 2450;
+	private final int tachosWaitingCalculator = 800;
 	
 	public LineFollower() {
 		float speed = 300;//ev3.left.getMaxSpeed() / 3f;
@@ -50,17 +55,13 @@ public class LineFollower implements AutoCloseable {
 			if (serverState == ServerState.WaitingZone) {
 				if (ev3.left.getTachoCount() <= tachosWaitingCalculator) {
 					ServerRequest request = requests.poll();
-					if (request != null) {
-						if (request instanceof GoRequest) {
-							System.out.println("Received:" + request);
-							serverState = ServerState.Go;
-							state = State.Forward;
-							Sound.beepSequenceUp();
-						}
+					if (request != null && request instanceof GoRequest) {
+						onGoReceived((GoRequest) request);
 					}
 				} else {
 					// Stop after the waiting zone
 					ev3.stop();
+					setLedColor(STATIC_RED);
 					ServerRequest request = null;
 					try {
 						request = requests.poll(500, TimeUnit.SECONDS);
@@ -68,11 +69,7 @@ public class LineFollower implements AutoCloseable {
 						e.printStackTrace();
 					}
 					if (request != null && request instanceof GoRequest) {
-						System.out.println("Received:" + request);
-						serverState = ServerState.Go;
-						state = State.Forward;
-						forwardState = ForwardState.TurnLeft;
-						Sound.beepSequenceUp();
+						onGoReceived((GoRequest) request);
 					}
 				}
 			}
@@ -80,6 +77,7 @@ public class LineFollower implements AutoCloseable {
 				if (ev3.left.getTachoCount() >= tachoEndCalculator) {
 					Sound.beepSequence();
 					serverState = ServerState.NoInfo;
+					setLedColor(TURN_OFF);
 					Client.getInsance().send(new FreeRequest());
 				}
 			}
@@ -146,6 +144,7 @@ public class LineFollower implements AutoCloseable {
 
 	private void askServerForForwardState() {
 		serverState = ServerState.WaitingZone;
+		setLedColor(NORMAL_BLINK_YELLOW);
 		ev3.left.resetTachoCount();
 		updatePosition();
 		
@@ -160,9 +159,31 @@ public class LineFollower implements AutoCloseable {
 			e.printStackTrace();
 		}
 	}
+	
+	public void onGoReceived(GoRequest request) {
+		System.out.println("Received:" + request);
+		serverState = ServerState.Go;
+		Button.LEDPattern(1);
+		state = State.Forward;
+		Sound.beepSequenceUp();
+		setLedColor(FAST_BLINK_GREEN);
+	}
+	
+	/**
+	 * Set blinking mode: </br>
+	 * 0: turn off button lights </br>
+	 * 1/2/3: static light green/red/yellow </br>
+	 * 4/5/6: normal blinking light green/red/yellow </br>
+	 * 7/8/9: fast blinking light green/red/yellow </br>
+	 * @param i Blinking mode
+	 */
+	public void setLedColor(int i) {
+		Button.LEDPattern(i);
+	}
 
 	@Override
 	public void close() {
+		setLedColor(TURN_OFF);
 		ev3.close();
 	}
 	

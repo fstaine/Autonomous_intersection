@@ -1,7 +1,6 @@
 package fr.utbm.tr54.server;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -79,11 +78,11 @@ public class IntersectionManager extends Thread implements RequestHandler<RobotR
 						client.sendRequest(new GoRequest());
 					} else {
 						// Add to wait list
-						passingDirection = ((PositionningRequest) request).getPosition();
-						Queue<InetAddress> waitingRobots = waitingMap.get(passingDirection);
+						int newDir = ((PositionningRequest) request).getPosition();
+						Queue<InetAddress> waitingRobots = waitingMap.get(newDir);
 						if (waitingRobots == null) {
 							waitingRobots = new LinkedBlockingQueue<InetAddress>();
-							waitingMap.put(passingDirection, waitingRobots);
+							waitingMap.put(newDir, waitingRobots);
 						}
 						waitingRobots.add(request.getSender());
 					}

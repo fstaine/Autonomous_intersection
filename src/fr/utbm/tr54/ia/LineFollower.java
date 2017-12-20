@@ -135,6 +135,7 @@ public class LineFollower implements AutoCloseable {
 		case Color.ORANGE:
 		case Color.RED:
 		//case Color.BROWN:
+			forwardState = ForwardState.TurnLeft;
 			if (serverState == ServerState.NoInfo) {
 				askServerForForwardState();
 			}

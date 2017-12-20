@@ -177,4 +177,8 @@ public class LineFollower implements AutoCloseable {
 	private enum ServerState {
 		NoInfo, Go, Stop, WaitingZone
 	}
+
+	public void setPosition(int pos) {
+		this.position = pos;
+	}
 }

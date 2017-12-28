@@ -7,6 +7,10 @@ import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
 import lejos.robotics.SampleProvider;
 
+/**
+ * Interface to interact with the Robot sensors and motors
+ * @author TSB Team
+ */
 public class RobotController implements AutoCloseable {
 	
 	private static RobotController instance = null;

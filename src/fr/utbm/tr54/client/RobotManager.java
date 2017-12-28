@@ -1,10 +1,9 @@
-package fr.utbm.tr54.ia;
+package fr.utbm.tr54.client;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import fr.utbm.tr54.client.Client;
 import fr.utbm.tr54.ev3.RobotController;
 import fr.utbm.tr54.net.FreeRequest;
 import fr.utbm.tr54.net.GoRequest;
@@ -14,22 +13,38 @@ import lejos.hardware.Button;
 import lejos.hardware.Sound;
 import lejos.robotics.Color;
 
-public class LineFollower implements AutoCloseable {
+public class RobotManager implements AutoCloseable {
 	
+	/**
+	 * LED colors constants
+	 */
+	public static final int STATIC_RED = 2;
+	public static final int NORMAL_BLINK_YELLOW = 6;
+	public static final int FAST_BLINK_GREEN = 7;
+	public static final int TURN_OFF = 0;
+	
+	/**
+	 * Robot instance, allow to access actuators & sensors
+	 */
 	RobotController ev3 = RobotController.getInstance();
+	
+	Client client = Client.getInsance();
+	
+	/**
+	 * State variables of the robot
+	 */
 	State state = State.Stop;
 	ForwardState forwardState;
 	ServerState serverState = ServerState.NoInfo;
-	final int STATIC_RED = 2;
-	final int NORMAL_BLINK_YELLOW = 6;
-	final int FAST_BLINK_GREEN = 7;
-	final int TURN_OFF = 0;
 	
 	/**
 	 * Position of the robot: 1 -> First orange color, 2 -> Second Orange color
 	 */
 	private int position = 1;
 	
+	/**
+	 * List of pending requests received from the server
+	 */
 	BlockingQueue<ServerRequest> requests = new LinkedBlockingQueue<>();
 	
 	/**
@@ -37,14 +52,23 @@ public class LineFollower implements AutoCloseable {
 	 */
 	private final float minDist = 15f;
 	
+	/**
+	 * Tacho count at the exit of the conflict zone
+	 */
 	private final int tachoEndCalculator = 2300;
+	
+	/**
+	 * Tacho count at the exit of the storage zone
+	 */
 	private final int tachosWaitingCalculator = 1000;
 	
-	public LineFollower() {
-		float speed = 300;//ev3.left.getMaxSpeed() / 3f;
+	public RobotManager() {
+		// Default speed
+		float speed = 300;
 		ev3.right.setSpeed(speed);
 		ev3.left.setSpeed(speed);
 		
+		// Default acceleration
 		int acceleration = 1000;
 		ev3.right.setAcceleration(acceleration);
 		ev3.left.setAcceleration(acceleration);
@@ -78,11 +102,11 @@ public class LineFollower implements AutoCloseable {
 					Sound.beepSequence();
 					serverState = ServerState.NoInfo;
 					setLedColor(TURN_OFF);
-					Client.getInsance().send(new FreeRequest());
+					client.send(new FreeRequest());
 				}
 			}
 			getStateFromDistance();
-			if (state == State.Forward) {
+			if (state == State.Forward) { // If min distance is respected
 				
 				getStateFromColor();
 				
@@ -96,12 +120,15 @@ public class LineFollower implements AutoCloseable {
 					ev3.right.forward();
 					ev3.left.forward();
 				}
-			} else {
+			} else { // Too close ot another object
 				ev3.stop();
 			}
 		}
 	}
 	
+	/**
+	 * Update the position after 
+	 */
 	private void updatePosition() {
 		if (position == 1) {
 			position = 2;
@@ -110,6 +137,17 @@ public class LineFollower implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Set the initial position of the robot
+	 * @param pos initial position of the robot
+	 */
+	public void setPosition(int pos) {
+		this.position = pos;
+	}
+
+	/**
+	 * Update state according to the distance with it's predecessor
+	 */
 	private void getStateFromDistance() {
 		if (ev3.distance() < minDist ) {
 			state = State.Stop;
@@ -118,6 +156,9 @@ public class LineFollower implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Update the state of the robot according to the line color
+	 */
 	private void getStateFromColor() {
 		int color = ev3.getColor();
 		switch (color) {
@@ -135,24 +176,30 @@ public class LineFollower implements AutoCloseable {
 		//case Color.BROWN:
 			forwardState = ForwardState.TurnLeft;
 			if (serverState == ServerState.NoInfo) {
-				askServerForForwardState();
+				enterWaitingZone();
 			}
 		default:
 			break;
 		}
 	}
 
-	private void askServerForForwardState() {
+	/**
+	 * Set robot state in WaitingZone 
+	 */
+	private void enterWaitingZone() {
 		serverState = ServerState.WaitingZone;
 		setLedColor(NORMAL_BLINK_YELLOW);
-		ev3.right.resetTachoCount();
-		ev3.left.resetTachoCount();
+		ev3.resetTachoCount();
 		updatePosition();
 		
 		// Send positioning request
-		Client.getInsance().send(new PositionningRequest(position));
+		client.send(new PositionningRequest(position));
 	}
 	
+	/**
+	 * Add a message to the incoming message queue
+	 * @param message the incoming message
+	 */
 	public void addMessage(ServerRequest message) {
 		try {
 			requests.put(message);
@@ -161,6 +208,11 @@ public class LineFollower implements AutoCloseable {
 		}
 	}
 	
+	/**
+	 * When a Go request is received <br/>
+	 * Update robot state accordingly
+	 * @param request
+	 */
 	public void onGoReceived(GoRequest request) {
 		System.out.println("Received:" + request);
 		serverState = ServerState.Go;
@@ -189,18 +241,53 @@ public class LineFollower implements AutoCloseable {
 	}
 	
 	private enum State {
-		Stop, Forward
+		/**
+		 * Robot must stop
+		 */
+		
+		Stop, 
+		/**
+		 * Robot can move
+		 */
+		Forward
 	}
 	
 	private enum ForwardState {
-		TurnLeft, TurnRight, Forward, 
+		/**
+		 * Robot must turn left to regain the track
+		 */
+		
+		TurnLeft, 
+		/**
+		 * Robot must turn right to regain the track
+		 */
+		
+		TurnRight, 
+		/**
+		 * Robot is on the track
+		 */
+		Forward, 
 	}
 	
 	private enum ServerState {
-		NoInfo, Go, Stop, WaitingZone
-	}
-
-	public void setPosition(int pos) {
-		this.position = pos;
+		/**
+		 * No info received from the server
+		 */
+		NoInfo, 
+		
+		/**
+		 * Can go inside the conflict zone
+		 */
+		Go, 
+		
+		/**
+		 * Robot must wait before the conflict zone
+		 */
+		Stop, 
+		
+		/**
+		 * Robot has enter the waiting zone
+		 */
+		WaitingZone
 	}
 }

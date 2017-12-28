@@ -4,13 +4,17 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 
 import fr.utbm.tr54.client.Client;
-import fr.utbm.tr54.ia.LineFollower;
+import fr.utbm.tr54.client.RobotManager;
 import lejos.hardware.Button;
 import lejos.hardware.Sound;
 
+/**
+ * Main class for a Robot.
+ * @author TSM Team
+ */
 public class TSB {
 	public static void main(String[] args) {
-		try (LineFollower robot = new LineFollower()) {
+		try (RobotManager robot = new RobotManager()) {
 			try(Client client = new Client("192.168.43.70", 8888, robot)) {
 				System.out.println("Select position");
 				System.out.println("> Enter: Right");

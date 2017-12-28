@@ -10,33 +10,47 @@ import java.net.UnknownHostException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import fr.utbm.tr54.ia.LineFollower;
 import fr.utbm.tr54.net.RobotRequest;
 import fr.utbm.tr54.net.ServerRequest;
 
+/**
+ * Robot side handler for a network connection between the server and a robot. 
+ * Receives / send messages from / to the server. 
+ * @author TSB Team
+ */
 public class Client implements Closeable, Runnable {
 
 	private static Client instance = null;
 	
+	/**
+	 * Get the client instance.
+	 * The instance have already been created before
+	 * @return
+	 */
 	public static Client getInsance() {
-		return instance;// FIXME
+		return instance;
 	}
 	
-	public void send(RobotRequest message){ //String message){
-		// Add to the list of messages to send
-		outputPendingRequest.add(message);
-	}
-	
+	/**
+	 * TCP Socket connection
+	 */
 	private Socket connexion;
 	private BufferedReader reader;
 	private PrintWriter writer;
+	
+	/**
+	 * Queue of requests to send
+	 */
 	private BlockingQueue<RobotRequest> outputPendingRequest = new LinkedBlockingQueue<>();
 	
 	private volatile boolean isRunning = false;
 
-	private LineFollower robot;
+	/**
+	 * The attached robot
+	 */
+	private RobotManager robot;
 
-	public Client(String host, int port, LineFollower robot) throws UnknownHostException, IOException {
+	public Client(String host, int port, RobotManager robot) throws UnknownHostException, IOException {
 		instance = this;
 		this.robot = robot;
 		connexion = new Socket(host, port);
@@ -47,7 +61,6 @@ public class Client implements Closeable, Runnable {
 	public void run() {
 		isRunning = true;
 		try {
-			
 			while (isRunning) {
 				//==================================================
 				if (hasIncommingRequest()) {
@@ -62,20 +75,7 @@ public class Client implements Closeable, Runnable {
 					writer.println(request.toString());
 					writer.flush();
 				}
-				
-				//float newSpeed = Float.parseFloat(request);
-				
-				//robot.setSpeed(newSpeed);
-
-				//System.out.println("Received: " +  request + ", " + newSpeed);
-				
-				//TODO : Différencier messages
 			}
-//			try {
-//				//Thread.sleep(20);
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
@@ -85,6 +85,14 @@ public class Client implements Closeable, Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * Add a message to the messages to send
+	 * @param message the message to send
+	 */
+	public void send(RobotRequest message){
+		outputPendingRequest.add(message);
 	}
 	
 	/**
@@ -117,9 +125,4 @@ public class Client implements Closeable, Runnable {
 		if (writer != null)
 			writer.close();
 	}
-
-	public void sendFreeZone() {
-		writer.write("FREE;");
-		writer.flush();
-	}	
 }

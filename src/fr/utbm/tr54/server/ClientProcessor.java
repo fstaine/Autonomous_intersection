@@ -43,7 +43,6 @@ public class ClientProcessor implements Runnable, Closeable {
 		System.out.println("Une connexion d'un client a ete recue: " + sock.getInetAddress());
 		try {
 			while (!sock.isClosed()) {
-				//TODO test if present
 				if (hasIncommingRequest()) {
 					RobotRequest request = getRequest();
 					if (request != null) {

@@ -64,8 +64,6 @@ public class IntersectionManager extends Thread implements RequestHandler<RobotR
 			while(isRunning) {
 				RobotRequest request = incommingRequests.take();
 				System.out.println("Received (" + request.getSender() + "): " + request);
-
-				// TODO gérer les interblocages !!!
 				
 				// when receive positionning request (enter in color ORANGE)
 				if (request instanceof PositionningRequest) {

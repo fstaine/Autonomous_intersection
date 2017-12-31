@@ -24,6 +24,7 @@ public class RobotController implements AutoCloseable {
 	private SampleProvider distanceSampleProvider;
 	
 	private RobotController() {
+		dist.enable();
 	}
 	
 	public static RobotController getInstance() {
@@ -83,91 +84,6 @@ public class RobotController implements AutoCloseable {
 	public float getSpeed() {
 		return left.getSpeed();
 	}
-
-	/**
-	 * Move to the left.
-	 * If flag value is big enough, set an important max speed for the left engine
-	 * @param flag to check if the robot should have a higher speed
-	 */
-	public void left(int flag) {
-		int accINT, accEXT, vitINT, vitEXT;
-		
-		if (flag>=70){
-			accEXT = 7000;
-			accINT = 2000;
-			vitEXT = 800;
-			vitINT = 5;
-			left.setSpeed(vitINT);
-//			System.out.println("flagLEFT="+flag);
-		} else {		
-			accEXT = 4000;
-			accINT = 2000;
-			vitEXT = 500;
-			vitINT = 50;
-			left.setSpeed(vitINT);
-		}
-		
-		right.setAcceleration(accEXT);
-		right.setSpeed(vitEXT);
-		right.backward();
-		
-		left.setAcceleration(accINT);
-		left.backward();
-	}
-
-	/**
-	 * Move to the right.
-	 * If flag value is big enough, set an important max speed for the right engine
-	 * @param flag to check if the robot should have a higher speed
-	 */
-	public void right(int flag) {
-		int accINT, accEXT, vitINT, vitEXT;
-		
-		if (flag>=70){
-			accEXT = 7000;
-			accINT = 2000;
-			vitEXT = 800;
-			vitINT = 5;
-			right.setSpeed(vitINT);
-//			System.out.println("flagRIGHT="+flag);
-		} else {			
-			accEXT = 4000;
-			accINT = 2000;
-			vitEXT = 500;
-			vitINT = 50;
-			right.setSpeed(vitINT);
-		}
-		
-		right.setAcceleration(accINT);
-		right.backward();
-		
-		left.setSpeed(vitEXT);
-		left.setAcceleration(accEXT);
-		left.backward();
-	}
-	
-	/**
-	 * Rotate the robot according to a certain angle.
-	 * Should not be used since rotation isn't always correct,
-	 * depending of the requested angle
-	 * @param rad angle to rotate in rad
-     * @param immediate_return if true do not wait for the move to complete
-	 */
-	@Deprecated
-	public void rotate(float rad, boolean immediate_return) {
-		float rotation_factor = 2; 
-		left.rotate(toDeg(rad * rotation_factor), true);
-		right.rotate(toDeg(-rad * rotation_factor), immediate_return);
-	}
-	
-	/**
-	 * Rotate the robot accoring to a certain angle, returns at the end of the rotation
-	 * @param rad angle to rotate in rad
-	 */
-	@Deprecated
-	public void rotate(float rad) {
-		rotate(rad, false);
-	}
 	
 	/**
 	 * Stop the robot
@@ -175,13 +91,6 @@ public class RobotController implements AutoCloseable {
 	public void stop() {
 		left.stop(true);
 		right.stop();
-	}
-	
-	/**
-	 * Enable distance sensor
-	 */
-	public void enableDist() {
-		dist.enable();
 	}
 	
 	/**
@@ -206,11 +115,9 @@ public class RobotController implements AutoCloseable {
 			distanceSampleProvider = dist.getDistanceMode();
 		}
 		for (int i=0;i<n;i++) {
-			// FIXME: get every time the same value ??
 			float val[] = new float[1];
 			distanceSampleProvider.fetchSample(val, 0);
 			sample[i] = val[0];
-			// Delay.msDelay(10);
 		}
 		return mean(sample);
 	}
@@ -221,7 +128,6 @@ public class RobotController implements AutoCloseable {
 	 */
 	public int getColor() {
 		int c = color.getColorID();
-		//System.out.println(c);
 		return c;
 	}
 	

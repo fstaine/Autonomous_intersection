@@ -14,8 +14,10 @@ import lejos.hardware.Sound;
  */
 public class TSB {
 	public static void main(String[] args) {
+		String serverHostname = "192.168.43.70";
+		
 		try (RobotManager robot = new RobotManager()) {
-			try(Client client = new Client("192.168.43.70", 8888, robot)) {
+			try(Client client = new Client(serverHostname, 8888, robot)) {
 				System.out.println("Select position");
 				System.out.println("> Enter: Right");
 				System.out.println("> Other: Left");

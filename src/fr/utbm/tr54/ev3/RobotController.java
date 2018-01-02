@@ -153,11 +153,19 @@ public class RobotController implements AutoCloseable {
 		return res / vals.length;
 	}
 	
+	/**
+	 * Reset the TachoCounts of the motors
+	 */
 	public void resetTachoCount() {
 		left.resetTachoCount();
 		right.resetTachoCount();
 	}
 	
+	/**
+	 * Get the current tacho count.
+	 * It's value if the mean between the left and the right engine
+	 * @return the current tacho count
+	 */
 	public int getMeanTachoCount() {
 		return (left.getTachoCount() + right.getTachoCount()) / 2;
 	}

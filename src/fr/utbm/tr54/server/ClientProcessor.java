@@ -21,7 +21,7 @@ import fr.utbm.tr54.net.ServerRequest;
  */
 public class ClientProcessor implements Runnable, Closeable {
 	
-	public final Socket sock;
+	private final Socket sock;
 	private BufferedReader reader;
 	private PrintWriter writer;
 	private Server server;

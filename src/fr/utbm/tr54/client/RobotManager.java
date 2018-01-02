@@ -28,14 +28,14 @@ public class RobotManager implements AutoCloseable {
 	 */
 	RobotController ev3 = RobotController.getInstance();
 	
-	Client client = Client.getInsance();
+	private Client client = Client.getInsance();
 	
 	/**
 	 * State variables of the robot
 	 */
-	State state = State.Stop;
-	ForwardState forwardState;
-	ServerState serverState = ServerState.NoInfo;
+	private State state = State.Stop;
+	private ForwardState forwardState;
+	private ServerState serverState = ServerState.NoInfo;
 	
 	/**
 	 * Position of the robot: 1 -> First orange color, 2 -> Second Orange color

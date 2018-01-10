@@ -28,8 +28,6 @@ public class RobotManager implements AutoCloseable {
 	 */
 	RobotController ev3 = RobotController.getInstance();
 	
-	private Client client = Client.getInsance();
-	
 	/**
 	 * State variables of the robot
 	 */
@@ -102,7 +100,7 @@ public class RobotManager implements AutoCloseable {
 					Sound.beepSequence();
 					serverState = ServerState.NoInfo;
 					setLedColor(TURN_OFF);
-					client.send(new FreeRequest());
+					Client.getInsance().send(new FreeRequest());
 				}
 			}
 			getStateFromDistance();
@@ -193,7 +191,7 @@ public class RobotManager implements AutoCloseable {
 		updatePosition();
 		
 		// Send positioning request
-		client.send(new PositionningRequest(position));
+		Client.getInsance().send(new PositionningRequest(position));
 	}
 	
 	/**
